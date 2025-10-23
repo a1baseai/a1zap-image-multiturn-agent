@@ -1,0 +1,6 @@
+run = "npm install && npm start"
+entrypoint = "server.js"
+language = "nodejs"
+
+[deployment]
+run = ["sh", "-c", "npm install && npm start"]

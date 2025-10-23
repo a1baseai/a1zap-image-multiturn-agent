@@ -1,0 +1,21 @@
+{
+  "baseFileId": "file_011CUPZvgxKDcNQUepYLmtYL",
+  "files": [
+    {
+      "id": "file_011CUPZM3kGp5bzcWCW36A26",
+      "filename": "brandoneats.csv",
+      "mimeType": "text/csv",
+      "sizeBytes": 57059,
+      "uploadedAt": "2025-10-23T05:13:36.257Z",
+      "originalPath": "/Users/pasha/a1base/brandytest/files/brandoneats.csv"
+    },
+    {
+      "id": "file_011CUPZvgxKDcNQUepYLmtYL",
+      "filename": "brandoneats.csv",
+      "mimeType": "text/csv",
+      "sizeBytes": 57059,
+      "uploadedAt": "2025-10-23T05:21:12.621Z",
+      "originalPath": "/Users/pasha/a1base/brandytest/files/brandoneats.csv"
+    }
+  ]
+}
