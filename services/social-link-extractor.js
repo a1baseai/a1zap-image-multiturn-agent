@@ -113,19 +113,19 @@ class SocialLinkExtractor {
    * 
    * @param {string} responseText - The text response from the bot
    * @param {Array} allLinks - Array of all social link objects from CSV
-   * @returns {Array} - Array of restaurant names that Claude identified as meaningfully discussed
+   * @returns {Object} - Object with mentionedNames array and suggestAlternatives boolean
    */
   async detectMentionedRestaurants(responseText, allLinks) {
     try {
       if (!allLinks || allLinks.length === 0) {
-        return [];
+        return { mentionedNames: [], suggestAlternatives: false };
       }
 
       // Extract just the names for Claude to analyze
       const restaurantNames = allLinks.map(link => link.name).filter(name => name);
       
       if (restaurantNames.length === 0) {
-        return [];
+        return { mentionedNames: [], suggestAlternatives: false };
       }
 
       console.log('🤖 Using Claude to detect mentioned restaurants...');
@@ -139,27 +139,48 @@ ${responseText}
 AVAILABLE RESTAURANT/PLACE NAMES:
 ${restaurantNames.map((name, i) => `${i + 1}. ${name}`).join('\n')}
 
-Task: Which of these restaurants or places are ACTUALLY DISCUSSED OR RECOMMENDED in the response text?
+Task: Analyze this response and provide two pieces of information:
 
-STRICT Rules:
-- ONLY return names that are specifically mentioned, discussed, or recommended in the response
+1. Which restaurants/places are ACTUALLY DISCUSSED OR RECOMMENDED?
+2. Does the response say "I don't have what you're looking for" but could benefit from suggesting alternatives?
+
+Rules for MENTIONED restaurants:
+- ONLY include names that are specifically mentioned, discussed, or recommended
 - The restaurant/place must be a key subject of the response, not just a passing mention
 - Match names even if slightly misspelled or abbreviated in the response
-- DO NOT include names that appear in generic statements or context without being discussed
-- If the response is just a greeting, clarification, or generic statement, return "NONE"
-- If the response doesn't actually discuss specific places, return "NONE"
-- Return ONLY the exact names from the list above, one per line
-- If none are meaningfully discussed, return "NONE"
+- DO NOT include names from generic statements
+
+Rules for SUGGESTING ALTERNATIVES:
+- If the response says something like "Brandon doesn't cover that type of place" or "I don't have high-end restaurants"
+- BUT there ARE potentially relevant alternatives in the data that could be helpful
+- Set this to true so we can suggest related options with context
+
+Format your response as:
+MENTIONED: [list restaurant names, one per line, or "NONE"]
+SUGGEST_ALTERNATIVES: [YES or NO]
 
 Examples:
-- "Brandon loved the pho at Pho 24" → Include "Pho 24"
-- "You should try Banh Mi 25" → Include "Banh Mi 25"
-- "Check out Highlands Coffee for great drinks" → Include "Highlands Coffee"
-- "Brandon has reviewed many places" → Return "NONE" (no specific place discussed)
-- "What restaurants do you want to know about?" → Return "NONE" (clarification question)
-- "I can help you find information" → Return "NONE" (generic statement)
+- "Brandon loved the pho at Pho 24" 
+  MENTIONED: Pho 24
+  SUGGEST_ALTERNATIVES: NO
 
-Return only the names, nothing else:`;
+- "You should try Banh Mi 25"
+  MENTIONED: Banh Mi 25
+  SUGGEST_ALTERNATIVES: NO
+
+- "Brandon doesn't cover high-end fine dining, he focuses on street food"
+  MENTIONED: NONE
+  SUGGEST_ALTERNATIVES: YES
+
+- "What restaurants do you want to know about?"
+  MENTIONED: NONE
+  SUGGEST_ALTERNATIVES: NO
+
+- "I can help you find information"
+  MENTIONED: NONE
+  SUGGEST_ALTERNATIVES: NO
+
+Analyze the response above:`;
 
       // Call Claude for analysis
       const claudeResponse = await claudeService.generateText(analysisPrompt, {
@@ -168,19 +189,130 @@ Return only the names, nothing else:`;
       });
 
       // Parse Claude's response
-      const mentionedNames = claudeResponse
-        .split('\n')
-        .map(line => line.trim())
-        .filter(line => line && line !== 'NONE' && !line.match(/^\d+\./))
-        .filter(line => restaurantNames.includes(line));
+      const lines = claudeResponse.split('\n').map(line => line.trim());
+      
+      // Extract mentioned restaurants
+      const mentionedSection = [];
+      let inMentioned = false;
+      let suggestAlternatives = false;
+      
+      for (const line of lines) {
+        if (line.startsWith('MENTIONED:')) {
+          inMentioned = true;
+          const restOfLine = line.replace('MENTIONED:', '').trim();
+          if (restOfLine && restOfLine !== 'NONE') {
+            mentionedSection.push(restOfLine);
+          }
+        } else if (line.startsWith('SUGGEST_ALTERNATIVES:')) {
+          inMentioned = false;
+          suggestAlternatives = line.includes('YES');
+        } else if (inMentioned && line && line !== 'NONE') {
+          mentionedSection.push(line);
+        }
+      }
+      
+      // Filter to only valid restaurant names
+      const mentionedNames = mentionedSection.filter(name => restaurantNames.includes(name));
 
       console.log(`✅ Claude identified ${mentionedNames.length} mentioned restaurants:`, mentionedNames);
+      console.log(`   Suggest alternatives: ${suggestAlternatives}`);
       
-      return mentionedNames;
+      return { mentionedNames, suggestAlternatives };
 
     } catch (error) {
       console.error('❌ Error detecting mentioned restaurants:', error.message);
-      return [];
+      return { mentionedNames: [], suggestAlternatives: false };
+    }
+  }
+
+  /**
+   * Find alternative suggestions when the exact request can't be fulfilled
+   * For example: user asks for "$100+ restaurants" but Brandon only covers street food
+   * This method finds the closest alternatives that might still be helpful
+   * 
+   * @param {string} responseText - The bot's response explaining the limitation
+   * @param {Array} allLinks - All available restaurants
+   * @returns {Object} - Object with alternatives array and contextMessage string
+   */
+  async findAlternativeSuggestions(responseText, allLinks) {
+    try {
+      console.log('🔍 Finding alternative suggestions for unmet request...');
+
+      const alternativePrompt = `A user asked for restaurant recommendations, but the response indicates Brandon doesn't cover that exact type.
+
+RESPONSE TEXT:
+${responseText}
+
+AVAILABLE RESTAURANTS:
+${allLinks.slice(0, 50).map((link, i) => `${i + 1}. ${link.name} (${link.type}, ${link.city})`).join('\n')}
+
+Task: Suggest 2-3 restaurants from the list that are the CLOSEST match to what the user wanted, even if not perfect.
+
+Also write a short context message (1 sentence) explaining why these alternatives might still be relevant.
+
+Rules:
+- Pick restaurants that are as close as possible to the user's request
+- Prioritize quality, popular spots, or interesting alternatives
+- If the user wanted "high-end" but we only have street food, suggest the nicest street food spots
+- If the user wanted a specific cuisine we don't have, suggest similar cuisines
+
+Format your response as:
+CONTEXT: [One sentence explaining why these alternatives are suggested]
+ALTERNATIVES:
+[Restaurant name 1]
+[Restaurant name 2]
+[Restaurant name 3]
+
+Example:
+CONTEXT: These are Brandon's most upscale dining spots, though they're still casual and under $50
+ALTERNATIVES:
+Restaurant A
+Restaurant B
+Restaurant C
+
+Analyze and suggest:`;
+
+      const claudeResponse = await claudeService.generateText(alternativePrompt, {
+        temperature: 0.4,
+        maxTokens: 500
+      });
+
+      // Parse response
+      const lines = claudeResponse.split('\n').map(line => line.trim());
+      let contextMessage = '';
+      const alternativeNames = [];
+      let inAlternatives = false;
+
+      for (const line of lines) {
+        if (line.startsWith('CONTEXT:')) {
+          contextMessage = line.replace('CONTEXT:', '').trim();
+        } else if (line.startsWith('ALTERNATIVES:')) {
+          inAlternatives = true;
+        } else if (inAlternatives && line) {
+          // Extract restaurant name (might have number prefix)
+          const cleanName = line.replace(/^\d+\.\s*/, '').trim();
+          if (cleanName) {
+            alternativeNames.push(cleanName);
+          }
+        }
+      }
+
+      // Find matching restaurants from allLinks
+      const alternatives = allLinks
+        .filter(link => alternativeNames.some(name => link.name.includes(name) || name.includes(link.name)))
+        .slice(0, 3); // Limit to 3
+
+      console.log(`✅ Found ${alternatives.length} alternative suggestions`);
+      console.log(`   Context: ${contextMessage}`);
+
+      return {
+        alternatives,
+        contextMessage: contextMessage || "Here are some related places Brandon has reviewed that might interest you"
+      };
+
+    } catch (error) {
+      console.error('❌ Error finding alternative suggestions:', error.message);
+      return { alternatives: [], contextMessage: '' };
     }
   }
 
@@ -189,7 +321,7 @@ Return only the names, nothing else:`;
    * Uses Claude AI to intelligently match mentioned restaurants
    * 
    * @param {string} responseText - The bot's response text
-   * @returns {Array} - Array of relevant social link objects with name and url
+   * @returns {Array} - Array of relevant social link objects with name, url, and optional contextMessage
    */
   async extractRelevantSocialLinks(responseText) {
     try {
@@ -205,15 +337,36 @@ Return only the names, nothing else:`;
         return [];
       }
 
-      // Use Claude to detect which restaurants are mentioned
-      const mentionedNames = await this.detectMentionedRestaurants(responseText, allLinks);
+      // Use Claude to detect which restaurants are mentioned and if we should suggest alternatives
+      const { mentionedNames, suggestAlternatives } = await this.detectMentionedRestaurants(responseText, allLinks);
+
+      // If no restaurants mentioned but we should suggest alternatives
+      if (mentionedNames.length === 0 && suggestAlternatives) {
+        console.log('💡 No specific restaurants mentioned, but suggesting relevant alternatives...');
+        const { alternatives, contextMessage } = await this.findAlternativeSuggestions(responseText, allLinks);
+        
+        if (alternatives.length > 0) {
+          const alternativeLinks = alternatives
+            .map(link => ({
+              name: link.name,
+              url: link.tiktokLink,
+              type: link.type,
+              city: link.city,
+              contextMessage // Add context to explain why we're showing these
+            }))
+            .filter(link => link.url);
+
+          console.log(`✅ Found ${alternativeLinks.length} relevant alternatives to suggest`);
+          return alternativeLinks;
+        }
+      }
 
       if (mentionedNames.length === 0) {
         console.log('ℹ️  No restaurants mentioned in response');
         return [];
       }
 
-      // Find the corresponding links
+      // Find the corresponding links for mentioned restaurants
       const relevantLinks = allLinks
         .filter(link => mentionedNames.includes(link.name))
         .map(link => ({

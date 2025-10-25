@@ -375,6 +375,9 @@ Answer:`;
           if (relevantLinks && relevantLinks.length > 0) {
           console.log(`📹 Found ${relevantLinks.length} relevant TikTok links, sending follow-up message...`);
           
+          // Check if this is an alternative suggestion (has contextMessage)
+          const isAlternativeSuggestion = relevantLinks[0]?.contextMessage;
+          
           // Create rich content blocks for each link
           const richContentBlocks = relevantLinks.map((link, index) => ({
             type: 'social_share',
@@ -386,9 +389,19 @@ Answer:`;
           }));
 
           // Send follow-up message with social embeds
-          const socialMessage = relevantLinks.length === 1
-            ? `🎥 Here's a video about ${relevantLinks[0].name}!`
-            : `🎥 Here are ${relevantLinks.length} videos about these places!`;
+          let socialMessage;
+          if (isAlternativeSuggestion) {
+            // Use the context message to explain why we're showing alternatives
+            const contextMsg = relevantLinks[0].contextMessage;
+            socialMessage = relevantLinks.length === 1
+              ? `💡 ${contextMsg}\n\n🎥 Check out ${relevantLinks[0].name}:`
+              : `💡 ${contextMsg}\n\n🎥 Here are ${relevantLinks.length} videos:`;
+          } else {
+            // Standard message for direct matches
+            socialMessage = relevantLinks.length === 1
+              ? `🎥 Here's a video about ${relevantLinks[0].name}!`
+              : `🎥 Here are ${relevantLinks.length} videos about these places!`;
+          }
 
           await brandonEatsClient.sendMessage(
             chatId,
