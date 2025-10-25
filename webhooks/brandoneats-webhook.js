@@ -211,77 +211,11 @@ async function brandonEatsWebhookHandler(req, res) {
     conversation.push({ role: 'user', content: String(userMessage) });
 
     // ============================================================================
-    // STEP 1: OFF-TOPIC QUESTION TRIAGE
+    // STEP 1: OFF-TOPIC QUESTION TRIAGE (TEMPORARILY DISABLED)
     // ============================================================================
-    // Before generating an expensive full response, we check if the question is
-    // even relevant to food/restaurants. This prevents the bot from answering
-    // completely unrelated questions (e.g., "What's the weather?", "Who won the game?")
-    // 
-    // The triage is intentionally permissive and assumes user intent - it treats
-    // travel questions and "where to visit" as food-related since users typically
-    // want dining recommendations. Only clearly off-topic questions are blocked.
-    //
-    // Benefits:
-    // - Saves API costs by avoiding full Claude generation for irrelevant questions
-    // - Sets clear boundaries about the bot's purpose
-    // - Prevents social link searches for off-topic queries
+    // Triage has been temporarily disabled - always respond with CSV data
     // ============================================================================
-    console.log('🔍 Checking if question is food/restaurant related...');
-    const topicCheckPrompt = `You are a topic classifier for a food/restaurant recommendation assistant.
-
-Question: "${userMessage}"
-
-Determine if this question could reasonably be answered by someone who reviews restaurants and food.
-
-ANSWER "YES" if the question is about:
-- Food, restaurants, cafes, dining experiences
-- Travel recommendations (where to visit/eat)
-- Menu items, dishes, cuisines
-- Restaurant recommendations or reviews
-- Places to visit (implies food/dining context)
-- Food-related activities or experiences
-
-ANSWER "NO" ONLY if the question is clearly about:
-- Weather, sports, politics, general trivia
-- Non-food topics with no connection to dining
-- Technical support, math problems, coding
-- Topics completely unrelated to food/travel/dining
-
-Context: Assume the user is asking with the intent to learn about food and places to eat.
-
-Answer with ONLY "YES" or "NO":`;
-
-    const topicCheck = await claudeService.generateText(topicCheckPrompt, {
-      temperature: 0.1,
-      maxTokens: 10
-    });
-
-    const isOnTopic = topicCheck.trim().toUpperCase().includes('YES');
-    
-    if (!isOnTopic) {
-      console.log('⚠️  Off-topic question detected - sending boundary response');
-      const boundaryResponse = "Hey! I'm here to help with Brandon's food reviews and restaurant recommendations. What would you like to know about places Brandon has tried? 🍕";
-      
-      // Send boundary response
-      if (!chatId.startsWith('test-')) {
-        try {
-          await brandonEatsClient.sendMessage(chatId, boundaryResponse);
-        } catch (sendError) {
-          console.error('Failed to send boundary message:', sendError.message);
-        }
-      }
-      
-      // Return early - no social links needed
-      return res.json({
-        success: true,
-        agent: brandonEatsAgent.name,
-        response: boundaryResponse,
-        offTopic: true,
-        testMode: chatId.startsWith('test-')
-      });
-    }
-    
-    console.log('✅ Question is on-topic - proceeding with full response');
+    console.log('ℹ️  Triage disabled - proceeding with full response for all questions');
 
     // Generate response using Claude with Brandon Eats agent configuration
     console.log('Generating response with Claude using Brandon Eats agent...');
