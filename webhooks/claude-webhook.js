@@ -90,13 +90,17 @@ async function claudeWebhookHandler(req, res) {
       // Use chat with history
       response = await claudeService.chatWithBaseFile(conversation, {
         ...claudeDocubotAgent.generationOptions,
-        systemPrompt: claudeDocubotAgent.systemPrompt
+        systemPrompt: claudeDocubotAgent.systemPrompt,
+        agentName: 'claude-docubot'
       });
     } else {
       // First message - use generateWithBaseFile
       response = await claudeService.generateWithBaseFile(
         `${claudeDocubotAgent.systemPrompt}\n\nUser: ${userMessage}\n\nAssistant:`,
-        claudeDocubotAgent.generationOptions
+        {
+          ...claudeDocubotAgent.generationOptions,
+          agentName: 'claude-docubot'
+        }
       );
     }
 

@@ -119,20 +119,22 @@ class ClaudeService {
 
   /**
    * Get the base file ID from registry
+   * @param {string} agentName - Optional agent name to get specific agent's file
    * @returns {string|null} Base file ID
    */
-  getBaseFileId() {
-    return fileRegistry.getBaseFile();
+  getBaseFileId(agentName = null) {
+    return fileRegistry.getBaseFile(agentName);
   }
 
   /**
    * Generate response with automatic base file inclusion
    * @param {string} prompt - User prompt
    * @param {Object} options - Generation options
+   * @param {string} options.agentName - Optional agent name for file lookup
    * @returns {Promise<string>} Generated response
    */
   async generateWithBaseFile(prompt, options = {}) {
-    const baseFileId = this.getBaseFileId();
+    const baseFileId = this.getBaseFileId(options.agentName);
     
     if (!baseFileId) {
       console.warn('⚠️  No base file set. Generating response without file context.');
@@ -148,10 +150,11 @@ class ClaudeService {
    * Chat with automatic base file inclusion
    * @param {Array} messages - Message history
    * @param {Object} options - Generation options
+   * @param {string} options.agentName - Optional agent name for file lookup
    * @returns {Promise<string>} Generated response
    */
   async chatWithBaseFile(messages, options = {}) {
-    const baseFileId = this.getBaseFileId();
+    const baseFileId = this.getBaseFileId(options.agentName);
     
     if (!baseFileId) {
       console.warn('⚠️  No base file set. Generating response without file context.');

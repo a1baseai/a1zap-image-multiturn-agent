@@ -291,7 +291,8 @@ Answer with ONLY "YES" or "NO":`;
       // Use chat with history
       response = await claudeService.chatWithBaseFile(conversation, {
         ...brandonEatsAgent.generationOptions,
-        systemPrompt: brandonEatsAgent.systemPrompt
+        systemPrompt: brandonEatsAgent.systemPrompt,
+        agentName: 'brandoneats'
       });
     } else {
       // First message - use generateWithBaseFile
@@ -299,7 +300,8 @@ Answer with ONLY "YES" or "NO":`;
         userMessage,
         {
           ...brandonEatsAgent.generationOptions,
-          systemPrompt: brandonEatsAgent.systemPrompt
+          systemPrompt: brandonEatsAgent.systemPrompt,
+          agentName: 'brandoneats'
         }
       );
     }
