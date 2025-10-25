@@ -1,7 +1,7 @@
 {
   "agentFiles": {
-    "brandoneats": "file_011CUPZM3kGp5bzcWCW36A26",
-    "claude-docubot": null
+    "brandoneats": "file_011CUUAShojCdg5KhfvmGUu7",
+    "claude-docubot": "file_011CUUAShojCdg5KhfvmGUu7"
   },
   "files": [
     {
@@ -11,7 +11,18 @@
       "sizeBytes": 57059,
       "uploadedAt": "2025-10-23T05:13:36.257Z",
       "originalPath": "/Users/pasha/a1base/brandytest/files/brandoneats.csv",
-      "assignedToAgents": ["brandoneats"]
+      "assignedToAgents": [
+        "brandoneats"
+      ]
+    },
+    {
+      "id": "file_011CUUAShojCdg5KhfvmGUu7",
+      "filename": "brandoneats.csv",
+      "mimeType": "text/csv",
+      "sizeBytes": 57059,
+      "uploadedAt": "2025-10-25T15:36:14.520Z",
+      "assignedToAgents": [],
+      "originalPath": "/Users/pasha/a1base/brandytest/files/brandoneats.csv"
     }
   ]
 }

@@ -65,6 +65,23 @@ Test that multiple unique videos are all properly returned.
 node tests/test-multiple-unique-videos.js
 ```
 
+### test-alternative-suggestions.js
+Test the intelligent alternative suggestions feature.
+
+**What it tests:**
+- Detecting when Brandon doesn't cover what the user wants
+- Suggesting relevant alternatives with context
+- Not triggering for direct recommendations
+- Not triggering for generic greetings
+
+**Usage:**
+```bash
+node tests/test-alternative-suggestions.js
+```
+
+**Example:**
+When a user asks for "$100+ restaurants" but Brandon only covers street food, the bot now suggests the most elevated places in his collection with context like: "These are Brandon's most upscale dining experiences (though still under $50)"
+
 ---
 
 ## Running Tests

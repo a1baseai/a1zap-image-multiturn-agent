@@ -163,12 +163,14 @@ General-purpose document-aware agent:
 Specialized for restaurant/food data:
 - CSV data parsing and analysis
 - **Intelligent filtering system** - only sends relevant responses and social links
+- **Alternative suggestions** - suggests related content when exact matches aren't available
 - Social media link extraction (Instagram, TikTok, YouTube)
 - Rich content responses with embedded media
 - Custom prompts for food industry queries
 
-**Agent Config:** `agents/brandoneats-agent.js`
-**📖 See `INTELLIGENT_FILTERING.md` for details on the smart triage and filtering system.**
+**Agent Config:** `agents/brandoneats-agent.js`  
+**📖 See `INTELLIGENT_FILTERING.md` for details on the smart triage and filtering system.**  
+**📖 See `ALTERNATIVE_SUGGESTIONS.md` for details on contextual alternative suggestions.**
 
 ---
 
@@ -272,20 +274,23 @@ await brandonEatsClient.sendMessage(chatId, 'Check out these videos!', richConte
 
 ### Intelligent Filtering & Social Link Extraction
 
-The Brandon Eats agent uses a sophisticated two-step filtering system:
+The Brandon Eats agent uses a sophisticated multi-stage filtering system:
 
 1. **Off-Topic Triage**: Filters out irrelevant questions (weather, sports, etc.) before processing
 2. **Smart Social Links**: Only sends TikTok videos when specific restaurants are discussed
+3. **Alternative Suggestions**: When exact matches aren't available, suggests relevant alternatives with context
 
 ```javascript
-// Automatically triggered when restaurant names are mentioned
-// Intelligently filters to prevent irrelevant content
-// See INTELLIGENT_FILTERING.md for full details
+// User: "I want restaurants over $100"
+// Bot: "Brandon doesn't cover high-end dining, he focuses on street food..."
+// Follow-up: "💡 These are Brandon's most elevated dining experiences..."
+//            [Sends 2-3 TikTok links with context]
 ```
 
 **Benefits:**
 - Saves API costs by avoiding unnecessary processing
 - Users only get relevant social media links
+- **Even "not found" responses now provide helpful alternatives**
 - Clear boundaries about bot's purpose
 - Assumes user intent for food/travel questions
 
@@ -366,6 +371,7 @@ Built-in duplicate message detection prevents double-processing:
 
 - `AGENT_PERSONALITY_GUIDE.md` - Customize agent personality and behavior
 - `INTELLIGENT_FILTERING.md` - Smart triage and social link filtering system
+- `ALTERNATIVE_SUGGESTIONS.md` - Contextual alternative suggestions when exact matches aren't found
 - `RICH_CONTENT_GUIDE.md` - Rich content formatting and social embeds
 - `SETUP.md` - Complete setup and deployment guide
 
