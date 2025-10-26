@@ -125,15 +125,25 @@ class A1ZapClient {
       const effectiveAgentId = agentId || this.agentId;
       const url = `${this.apiUrl}/${effectiveAgentId}/chat/${chatId}?limit=${limit}`;
 
+      console.log('📡 Fetching message history:');
+      console.log(`   URL: ${url}`);
+      console.log(`   API Key: ${this.apiKey.substring(0, 8)}...`);
+
       const response = await axios.get(url, {
         headers: {
           'X-API-Key': this.apiKey
         }
       });
 
+      console.log(`✅ Message history retrieved: ${response.data.messages?.length || 0} messages`);
       return response.data.messages || [];
     } catch (error) {
-      console.error('❌ Error fetching message history:', error.response?.data || error.message);
+      console.error('❌ Error fetching message history:');
+      console.error('   URL:', `${this.apiUrl}/${agentId || this.agentId}/chat/${chatId}?limit=${limit}`);
+      console.error('   Status:', error.response?.status);
+      console.error('   Status Text:', error.response?.statusText);
+      console.error('   Response Data:', error.response?.data);
+      console.error('   Error Message:', error.message);
       return [];
     }
   }

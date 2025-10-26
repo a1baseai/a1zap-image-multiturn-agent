@@ -125,9 +125,19 @@ Keep your text response brief and friendly - describe what you've done in 1-2 se
     }
     
     if (isFirstMessage) {
+      // First message - if no substantive request, apply a default natural look
+      if (!normalizedMessage || normalizedMessage.length < 5) {
+        return `Apply a natural, flattering makeup look to this image. Include subtle enhancements like soft eye makeup, natural-looking foundation, and a touch of color on the lips. Keep your text response brief and friendly - describe what you've done in 1-2 sentences.`;
+      }
+      
       return `${normalizedMessage}
 
 Please analyze the image and apply the requested makeup changes. Keep your text response brief and friendly - describe what you've done in 1-2 sentences.`;
+    }
+    
+    // If no substantive message and no context, apply a default look
+    if ((!normalizedMessage || normalizedMessage.length < 5) && !context) {
+      return `Apply a natural, flattering makeup look to this image. Include subtle enhancements like soft eye makeup, natural-looking foundation, and a touch of color on the lips. Keep your text response brief and friendly - describe what you've done in 1-2 sentences.`;
     }
     
     return `${context}${normalizedMessage}

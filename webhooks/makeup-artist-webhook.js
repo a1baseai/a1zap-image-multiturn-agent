@@ -3,6 +3,7 @@ const a1zapClient = require('../services/a1zap-client');
 const imageStorage = require('../services/image-storage');
 const makeupArtistAgent = require('../agents/makeup-artist-agent');
 const webhookHelpers = require('../services/webhook-helpers');
+const conversationCache = require('../services/conversation-cache');
 const config = require('../config');
 
 /**
@@ -49,7 +50,15 @@ async function makeupArtistWebhookHandler(req, res) {
     console.log(`User message: "${userMessage}"`);
     console.log(`Image URL: ${imageUrl || 'No image provided'}`);
 
-    // Fetch conversation history with image tracking enabled
+    // Cache incoming content FIRST (before trying to fetch history)
+    if (imageUrl) {
+      conversationCache.storeImage(chatId, imageUrl, userMessage);
+    }
+    if (userMessage && userMessage !== '[Image]') {
+      conversationCache.storeRequest(chatId, userMessage);
+    }
+
+    // Try to fetch conversation history with image tracking enabled
     const conversation = await webhookHelpers.fetchAndProcessHistory(
       a1zapClient,
       chatId,
@@ -60,19 +69,41 @@ async function makeupArtistWebhookHandler(req, res) {
 
     console.log(`Conversation history: ${conversation.length} messages`);
 
-    // If no image in current message, look for recent images in history
+    // Determine effective image URL (current message, history, or cache)
     let effectiveImageUrl = imageUrl;
+    let imageSource = imageUrl ? 'current_message' : null;
+    
     if (!effectiveImageUrl) {
+      // Try history first
       effectiveImageUrl = webhookHelpers.findRecentImage(conversation, 5);
       if (effectiveImageUrl) {
-        console.log(`📸 No image in current message - using recent image from history`);
+        imageSource = 'history';
+        console.log(`📸 Using recent image from history`);
+      }
+    }
+    
+    if (!effectiveImageUrl) {
+      // Fall back to cache if history didn't help
+      effectiveImageUrl = conversationCache.getRecentImage(chatId, 5);
+      if (effectiveImageUrl) {
+        imageSource = 'cache';
+        console.log(`📸 Using recent image from cache (history unavailable)`);
       }
     }
 
-    // Extract previous makeup request for context
-    const previousRequest = webhookHelpers.extractPreviousMakeupRequest(conversation, 10);
+    // Extract previous makeup request (from history or cache)
+    let previousRequest = webhookHelpers.extractPreviousMakeupRequest(conversation, 10);
+    
+    if (!previousRequest) {
+      // Fall back to cache if history didn't provide context
+      previousRequest = conversationCache.getRecentRequest(chatId, 5);
+      if (previousRequest) {
+        console.log(`💄 Using previous request from cache (history unavailable)`);
+      }
+    }
+    
     if (previousRequest) {
-      console.log(`💄 Previous makeup request found: "${previousRequest}"`);
+      console.log(`💄 Previous makeup request: "${previousRequest}"`);
     }
 
     // Check if we have an image to work with (current or from history)
