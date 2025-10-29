@@ -177,22 +177,25 @@ class ZapBankRepWebhook extends BaseWebhook {
 
       console.log(`✨ AI Decision: Send ${decision.contentType} - ${decision.reasoning}`);
 
+      // Get accompanying message (use AI-generated or fallback to generic)
+      const accompanyingMessage = decision.accompanyingMessage || this.getDefaultAccompanyingMessage(decision.contentType);
+
       // Send appropriate content based on AI decision
       switch (decision.contentType) {
         case 'carousel':
-          await this.sendProductCarousel(chatId, response);
+          await this.sendProductCarousel(chatId, accompanyingMessage);
           break;
         
         case 'product_card':
           if (decision.productType) {
-            await this.sendProductCard(chatId, decision.productType);
+            await this.sendProductCard(chatId, decision.productType, accompanyingMessage);
           } else {
             console.warn('⚠️  Product card requested but no productType specified');
           }
           break;
         
         case 'cta_buttons':
-          await this.sendCTAButtons(chatId);
+          await this.sendCTAButtons(chatId, accompanyingMessage);
           break;
         
         default:
@@ -203,6 +206,20 @@ class ZapBankRepWebhook extends BaseWebhook {
       console.error('⚠️  Error in AI rich content triage:', error.message);
       // Don't throw - this is a non-critical feature
     }
+  }
+
+  /**
+   * Get default accompanying message if AI doesn't provide one
+   * @param {string} contentType - Type of content being sent
+   * @returns {string} Default message
+   */
+  getDefaultAccompanyingMessage(contentType) {
+    const defaults = {
+      carousel: 'Check these out 👀',
+      product_card: 'Here\'s what I\'m talking about 🔥',
+      cta_buttons: 'Ready to take the next step? 👇'
+    };
+    return defaults[contentType] || 'Take a look 👇';
   }
 
   /**
@@ -243,9 +260,9 @@ class ZapBankRepWebhook extends BaseWebhook {
   /**
    * Send product carousel with top Zap Bank features
    * @param {string} chatId - Chat ID
-   * @param {string} context - Response context for tailoring
+   * @param {string} accompanyingMessage - Message to send with the carousel
    */
-  async sendProductCarousel(chatId, context) {
+  async sendProductCarousel(chatId, accompanyingMessage) {
     // Get base URL from config
     const baseUrl = config.server.baseUrl || 'http://localhost:3000';
     
@@ -299,7 +316,7 @@ class ZapBankRepWebhook extends BaseWebhook {
     await webhookHelpers.sendResponse(
       this.client,
       chatId,
-      '🏦 Here\'s what Zap Bank offers:',
+      accompanyingMessage,
       richContentBlocks
     );
 
@@ -310,8 +327,9 @@ class ZapBankRepWebhook extends BaseWebhook {
    * Send specific product card
    * @param {string} chatId - Chat ID
    * @param {string} productType - Type of product (treasury, corporate-cards, checking)
+   * @param {string} accompanyingMessage - Message to send with the product card
    */
-  async sendProductCard(chatId, productType) {
+  async sendProductCard(chatId, productType, accompanyingMessage) {
     // Get base URL from config
     const baseUrl = config.server.baseUrl || 'http://localhost:3000';
     
@@ -372,7 +390,7 @@ class ZapBankRepWebhook extends BaseWebhook {
     await webhookHelpers.sendResponse(
       this.client,
       chatId,
-      `Here's more about ${productData.name}:`,
+      accompanyingMessage,
       richContentBlocks
     );
 
@@ -382,8 +400,9 @@ class ZapBankRepWebhook extends BaseWebhook {
   /**
    * Send CTA buttons for signup/learning more
    * @param {string} chatId - Chat ID
+   * @param {string} accompanyingMessage - Message to send with the CTA buttons
    */
-  async sendCTAButtons(chatId) {
+  async sendCTAButtons(chatId, accompanyingMessage) {
     // Get base URL from config
     const baseUrl = config.server.baseUrl || 'http://localhost:3000';
     
@@ -423,7 +442,7 @@ class ZapBankRepWebhook extends BaseWebhook {
     await webhookHelpers.sendResponse(
       this.client,
       chatId,
-      'Ready to take the next step? 👇',
+      accompanyingMessage,
       richContentBlocks
     );
 

@@ -23,7 +23,7 @@ class ZapBankRichContentTriage {
    * @param {Array} conversationHistory - Previous conversation messages [{role, content}]
    * @param {string} userMessage - Latest user message
    * @param {string} agentResponse - Agent's text response
-   * @returns {Promise<Object>} Decision object: { shouldSend, contentType, productType?, reasoning }
+   * @returns {Promise<Object>} Decision object: { shouldSend, contentType, productType?, reasoning, accompanyingMessage? }
    */
   async analyze(conversationHistory, userMessage, agentResponse) {
     try {
@@ -78,13 +78,27 @@ RESPONSE FORMAT (JSON ONLY):
   "shouldSend": true/false,
   "contentType": "carousel" | "product_card" | "cta_buttons" | "none",
   "productType": "treasury" | "corporate-cards" | "checking" | null,
-  "reasoning": "Brief explanation of decision"
+  "reasoning": "Brief explanation of decision",
+  "accompanyingMessage": "A short, Zack-style message that flows naturally from the agent's previous response (only if shouldSend is true)"
 }
+
+ACCOMPANYING MESSAGE REQUIREMENTS (when shouldSend is true):
+- Write in Zack's voice: flirty, spicy, confident, startup-friendly 😏
+- Should feel like a natural continuation of the previous response
+- Keep it SHORT (1-2 sentences max)
+- Use emojis naturally: 👀 🔥 💰 💳 😉
+- Examples:
+  * "Check these out 👀"
+  * "Here's what I'm talking about 🔥"
+  * "Let me show you the good stuff 💰"
+  * "Take a look at what we've got for you 😉"
+  * "Ready to see the magic? 👇"
 
 IMPORTANT:
 - Return ONLY valid JSON, no other text
 - Be conservative - when in doubt, choose "none"
 - productType only needed when contentType is "product_card"
+- accompanyingMessage only needed when shouldSend is true
 - Consider conversation flow and naturalness
 - Avoid overwhelming users with too much rich content`;
 
