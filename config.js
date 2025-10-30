@@ -34,6 +34,13 @@ module.exports = {
       apiUrl: process.env.BRANDONEATS_API_URL || 'https://api.a1zap.com/v1/messages/individual',
       agentName: 'brandoneats'
     },
+    
+    willWanderForFood: {
+      apiKey: process.env.WILLWANDERFORFOOD_API_KEY || 'your_will_wander_for_food_api_key_here',
+      agentId: process.env.WILLWANDERFORFOOD_AGENT_ID || 'your_will_wander_for_food_agent_id_here',
+      apiUrl: process.env.WILLWANDERFORFOOD_API_URL || 'https://api.a1zap.com/v1/messages/individual',
+      agentName: 'willwanderforfood'
+    },
 
     makeupArtist: {
       apiKey: process.env.MAKEUP_ARTIST_API_KEY || process.env.A1ZAP_API_KEY || 'your_makeup_artist_api_key_here',
