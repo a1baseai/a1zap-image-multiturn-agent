@@ -113,5 +113,4 @@ if (claudeOk && !baseFile) {
 
 console.log('📚 Documentation:');
 console.log('   - Main guide: README.md');
-console.log('   - Claude setup: CLAUDE_SETUP.md\n');
 
